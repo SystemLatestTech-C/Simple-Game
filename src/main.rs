@@ -140,6 +140,6 @@ fn main() -> GameResult {
     let (ctx, event_loop) = &mut cb.build()?;
     graphics::set_window_title(ctx, "Ping-Pong");
     let mut state = MainState::new(ctx);
-    event::run(ctx, event_loop, &mut state);
+    event::run(ctx, event_loop, &mut state).unwrap();
     Ok(())
 }
