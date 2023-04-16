@@ -7,17 +7,6 @@
     {
       "type": "lldb",
       "request": "launch",
-<<<<<<< Updated upstream
-      "name": "Debug executable 'rustproject'",
-      "cargo": {
-        "args": [
-          "build",
-          "--bin=rustproject",
-          "--package=rustproject"
-        ],
-        "filter": {
-          "name": "rustproject",
-=======
       "name": "Debug executable 'pongGame'",
       "cargo": {
         "args": [
@@ -27,7 +16,6 @@
         ],
         "filter": {
           "name": "pongGame",
->>>>>>> Stashed changes
           "kind": "bin"
         }
       },
@@ -37,28 +25,16 @@
     {
       "type": "lldb",
       "request": "launch",
-<<<<<<< Updated upstream
-      "name": "Debug unit tests in executable 'rustproject'",
-=======
       "name": "Debug unit tests in executable 'pongGame'",
->>>>>>> Stashed changes
       "cargo": {
         "args": [
           "test",
           "--no-run",
-<<<<<<< Updated upstream
-          "--bin=rustproject",
-          "--package=rustproject"
-        ],
-        "filter": {
-          "name": "rustproject",
-=======
           "--bin=pongGame",
           "--package=pongGame"
         ],
         "filter": {
           "name": "pongGame",
->>>>>>> Stashed changes
           "kind": "bin"
         }
       },
