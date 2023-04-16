@@ -1,18 +1,18 @@
-use ggez;
-use ggez::event;
-use ggez::graphics;
-use ggez::input::keyboard::{self, KeyCode};
-use ggez::nalgebra as na;
-use ggez::{Context, GameResult};
-use rand::{self, thread_rng, Rng};
-const RACKET_HEIGHT: f32 = 100.0;
-const RACKET_WIDTH: f32 = 20.0;
-const RACKET_WIDTH_HALF: f32 = RACKET_WIDTH * 0.5;
-const RACKET_HIGHT_HALF: f32 = RACKET_HEIGHT * 0.5;
-const BALL_SIZE: f32 = 30.0;
-const BALL_SIZE_HALF: f32 = BALL_SIZE * 0.5;
-const PLAYER_SPEED: f32 = 600.0;
-const BALL_SPEED: f32 = 400.0;
+use ggez; // rust의 게임 라이브러리
+use ggez::event; // 이벤트 모듈
+use ggez::graphics; // 그래픽 모듈
+use ggez::input::keyboard::{self, KeyCode}; // 키보드 모듈
+use ggez::nalgebra as na; // 벡터, 행렬 등의 수학 연산 모듈
+use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과 반환)
+use rand::{self, thread_rng, Rng}; // 랜덤 모듈
+const RACKET_HEIGHT: f32 = 100.0; // 라켓의 높이
+const RACKET_WIDTH: f32 = 20.0; // 라켓의 너비
+const RACKET_WIDTH_HALF: f32 = RACKET_WIDTH * 0.5; // 라켓의 너비의 절반
+const RACKET_HIGHT_HALF: f32 = RACKET_HEIGHT * 0.5; // 라켓의 높이의 절반
+const BALL_SIZE: f32 = 30.0; // 공의 크기
+const BALL_SIZE_HALF: f32 = BALL_SIZE * 0.5; // 공의 크기의 절반
+const PLAYER_SPEED: f32 = 600.0; // 플레이어의 속도
+const BALL_SPEED: f32 = 300.0; // 공의 속도
 fn clamp(value: &mut f32, low: f32, high: f32) {
     if *value < low {
         *value = low;
