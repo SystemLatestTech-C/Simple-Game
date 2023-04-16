@@ -136,10 +136,14 @@ impl event::EventHandler for MainState {
     }
 }
 fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("Ping-pong", "Name");
+    // 게임 컨텍스트와 이벤트 루프를 생성합니다.
+    //컨텍스트는 게임의 실행 환경, 자원 등의  정보를 담은 객체
+    //이벤트 루프는 게임의 메인 루프로 게임 상태를 업데이트하고, 화면을 렌더링하는 역할
+    let cb = ggez::ContextBuilder::new("Ping-pong", "Name")
+        .window_mode(ggez::conf::WindowMode::default().dimensions(800.0, 600.0));
     let (ctx, event_loop) = &mut cb.build()?;
-    graphics::set_window_title(ctx, "Ping-Pong");
-    let mut state = MainState::new(ctx);
-    event::run(ctx, event_loop, &mut state);
-    Ok(())
+    graphics::set_window_title(ctx, "Ping-Pong"); // 창 제목을 설정합니다.
+    let mut state = MainState::new(ctx); // 게임 상태를 초기화합니다.
+    event::run(ctx, event_loop, &mut state).unwrap(); // 이벤트 루프를 실행합니다.
+    Ok(()) //성공적으로 완료, 반환값 없음
 }
