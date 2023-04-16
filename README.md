@@ -1,1 +1,1 @@
-# Simple-Game
+Ping-Pong Game
