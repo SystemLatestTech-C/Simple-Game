@@ -36,22 +36,25 @@ fn randomize_vec(vec: &mut na::Vector2<f32>, x: f32, y: f32) { // 공의 방향�
     };
 }
 struct MainState {
-    player_1_pos: na::Point2<f32>,
+    // player1,2 에 대한 posintion 값 feild 설정
+    player_1_pos: na::Point2<f32>, //Point2는 2차원 공간에서의 점(위치)를 나타냅니다.
     player_2_pos: na::Point2<f32>,
+    // ball의 위치와 방향 값 feild 설정
     ball_pos: na::Point2<f32>,
-    ball_vel: na::Vector2<f32>,
+    ball_vel: na::Vector2<f32>, //ball의 방향을 나타내야 하기 때문에 2차원 벡터를 나타내는 Vector2타입으로 설정합니다.
 }
 impl MainState {
+    //MainState 구조체의 인스턴스를 생성하는 함수
     pub fn new(ctx: &mut Context) -> Self {
-        let (screen_w, screen_h) = graphics::drawable_size(ctx);
-        let (screen_w_half, screen_h_half) = (screen_w * 0.5, screen_h * 0.5);
-        let mut ball_vel = na::Vector2::new(0.0, 0.0);
-        randomize_vec(&mut ball_vel, 50.0, 50.0);
+        let (screen_w, screen_h) = graphics::drawable_size(ctx);// 현재 게임 윈도우의 너비와 높이 정보를 screen_w, screen_h에 저장
+        let (screen_w_half, screen_h_half) = (screen_w * 0.5, screen_h * 0.5);// screen half값 저장
+        let mut ball_vel = na::Vector2::new(0.0, 0.0);// ball_vel의 초기화
+        randomize_vec(&mut ball_vel, 300.0, 300.0); //randomize_vec 함수를 써서 ball의 속도를 300.0으로 설정합니다.
         MainState {
-            player_1_pos: na::Point2::new(RACKET_WIDTH_HALF, screen_h_half),
+            player_1_pos: na::Point2::new(RACKET_WIDTH_HALF, screen_h_half), //player1,2의 위치를 스크린 중간높이에 저장
             player_2_pos: na::Point2::new(screen_w - RACKET_WIDTH_HALF, screen_h_half),
-            ball_pos: na::Point2::new(screen_w_half, screen_h_half),
-            ball_vel: ball_vel,
+            ball_pos: na::Point2::new(screen_w_half, screen_h_half),// ball의 위치를 스크린 가운데로 저장
+            ball_vel: ball_vel,//ball_vel 필드 초기화
         }
     }
 }
