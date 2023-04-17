@@ -1,42 +1,37 @@
-use ggez;
-use ggez::event;
-use ggez::graphics;
-use ggez::input::keyboard::{self, KeyCode};
-use ggez::nalgebra as na;
-use ggez::{Context, GameResult};
-use rand::{self, thread_rng, Rng};
-const RACKET_HEIGHT: f32 = 100.0;
-const RACKET_WIDTH: f32 = 20.0;
-const RACKET_WIDTH_HALF: f32 = RACKET_WIDTH * 0.5;
-const RACKET_HIGHT_HALF: f32 = RACKET_HEIGHT * 0.5;
-const BALL_SIZE: f32 = 30.0;
-const BALL_SIZE_HALF: f32 = BALL_SIZE * 0.5;
-const PLAYER_SPEED: f32 = 600.0;
-const BALL_SPEED: f32 = 400.0;
-fn clamp(value: &mut f32, low: f32, high: f32) {
-    if *value < low {
-        *value = low;
-    } else if *value > high {
-        *value = high;
-    }
-}
+use ggez; // rust의 게임 라이브러리
+use ggez::event; // 이벤트 모듈
+use ggez::graphics; // 그래픽 모듈
+use ggez::input::keyboard::{self, KeyCode}; // 키보드 모듈
+use ggez::nalgebra as na; // 벡터, 행렬 등의 수학 연산 모듈
+use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과 반환)
+use rand::{self, thread_rng, Rng}; // 랜덤 모듈
+const RACKET_HEIGHT: f32 = 100.0; // 라켓의 높이
+const RACKET_WIDTH: f32 = 20.0; // 라켓의 너비
+const RACKET_WIDTH_HALF: f32 = RACKET_WIDTH * 0.5; // 라켓의 너비의 절반
+const RACKET_HIGHT_HALF: f32 = RACKET_HEIGHT * 0.5; // 라켓의 높이의 절반
+const BALL_SIZE: f32 = 30.0; // 공의 크기
+const BALL_SIZE_HALF: f32 = BALL_SIZE * 0.5; // 공의 크기의 절반
+const PLAYER_SPEED: f32 = 600.0; // 플레이어의 속도
+const BALL_SPEED: f32 = 300.0; // 공의 속도
+
 fn move_racket(pos: &mut na::Point2<f32>, keycode: KeyCode, y_dir: f32, ctx: &mut Context) {
-    let screen_h = graphics::drawable_size(ctx).1;
-    let dt = ggez::timer::delta(ctx).as_secs_f32();
+    let screen_h = graphics::drawable_size(ctx).1; // 화면의 높이를 가져옵니다.
+    let dt = ggez::timer::delta(ctx).as_secs_f32(); // 1프레임당 흐른 시간(델타 타임)을 가져옵니다.
     if keyboard::is_key_pressed(ctx, keycode) {
-        pos.y += y_dir * PLAYER_SPEED * dt;
+        // 해당 키가 눌렸는지 확인합니다.
+        pos.y += y_dir * PLAYER_SPEED * dt; // 라켓의 y 좌표를 업데이트합니다.
     }
-    clamp(&mut pos.y, RACKET_HIGHT_HALF, screen_h - RACKET_HIGHT_HALF);
+    pos.y = pos.y.clamp(RACKET_HIGHT_HALF, screen_h - RACKET_HIGHT_HALF); // 라켓이 화면 밖으로 나가지 않도록 위치를 조정합니다.
 }
-fn randomize_vec(vec: &mut na::Vector2<f32>, x: f32, y: f32) {
-    let mut rng = thread_rng();
-    vec.x = match rng.gen_bool(0.5) {
-        true => x,
-        false => -x,
+fn randomize_vec(vec: &mut na::Vector2<f32>, x: f32, y: f32) { // 공의 방향을 랜덤한 방향으로 설정합니다.
+    let mut rng = thread_rng(); // 랜덤 모듈의 인스턴스를 생성합니다.
+    vec.x = match rng.gen_bool(0.5) { // 0.5의 확률로 true 또는 false를 반환합니다.
+        true => x, // true일 경우 x를 반환합니다.
+        false => -x, // false일 경우 -x를 반환합니다.
     };
-    vec.y = match rng.gen_bool(0.5) {
-        true => y,
-        false => -y,
+    vec.y = match rng.gen_bool(0.5) {// 0.5의 확률로 true 또는 false를 반환합니다.
+        true => y, // true일 경우 y를 반환합니다.
+        false => -y, // false일 경우 -y를 반환합니다.
     };
 }
 struct MainState {
