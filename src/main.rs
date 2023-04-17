@@ -13,20 +13,15 @@ const BALL_SIZE: f32 = 30.0; // 공의 크기
 const BALL_SIZE_HALF: f32 = BALL_SIZE * 0.5; // 공의 크기의 절반
 const PLAYER_SPEED: f32 = 600.0; // 플레이어의 속도
 const BALL_SPEED: f32 = 300.0; // 공의 속도
-fn clamp(value: &mut f32, low: f32, high: f32) {
-    if *value < low {
-        *value = low;
-    } else if *value > high {
-        *value = high;
-    }
-}
+
 fn move_racket(pos: &mut na::Point2<f32>, keycode: KeyCode, y_dir: f32, ctx: &mut Context) {
-    let screen_h = graphics::drawable_size(ctx).1;
-    let dt = ggez::timer::delta(ctx).as_secs_f32();
+    let screen_h = graphics::drawable_size(ctx).1; // 화면의 높이를 가져옵니다.
+    let dt = ggez::timer::delta(ctx).as_secs_f32(); // 1프레임당 흐른 시간(델타 타임)을 가져옵니다.
     if keyboard::is_key_pressed(ctx, keycode) {
-        pos.y += y_dir * PLAYER_SPEED * dt;
+        // 해당 키가 눌렸는지 확인합니다.
+        pos.y += y_dir * PLAYER_SPEED * dt; // 라켓의 y 좌표를 업데이트합니다.
     }
-    clamp(&mut pos.y, RACKET_HIGHT_HALF, screen_h - RACKET_HIGHT_HALF);
+    pos.y = pos.y.clamp(RACKET_HIGHT_HALF, screen_h - RACKET_HIGHT_HALF); // 라켓이 화면 밖으로 나가지 않도록 위치를 조정합니다.
 }
 fn randomize_vec(vec: &mut na::Vector2<f32>, x: f32, y: f32) {
     let mut rng = thread_rng();
