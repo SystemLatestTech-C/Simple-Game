@@ -23,15 +23,15 @@ fn move_racket(pos: &mut na::Point2<f32>, keycode: KeyCode, y_dir: f32, ctx: &mu
     }
     pos.y = pos.y.clamp(RACKET_HIGHT_HALF, screen_h - RACKET_HIGHT_HALF); // 라켓이 화면 밖으로 나가지 않도록 위치를 조정합니다.
 }
-fn randomize_vec(vec: &mut na::Vector2<f32>, x: f32, y: f32) {
-    let mut rng = thread_rng();
-    vec.x = match rng.gen_bool(0.5) {
-        true => x,
-        false => -x,
+fn randomize_vec(vec: &mut na::Vector2<f32>, x: f32, y: f32) { // 공의 방향을 랜덤한 방향으로 설정합니다.
+    let mut rng = thread_rng(); // 랜덤 모듈의 인스턴스를 생성합니다.
+    vec.x = match rng.gen_bool(0.5) { // 0.5의 확률로 true 또는 false를 반환합니다.
+        true => x, // true일 경우 x를 반환합니다.
+        false => -x, // false일 경우 -x를 반환합니다.
     };
-    vec.y = match rng.gen_bool(0.5) {
-        true => y,
-        false => -y,
+    vec.y = match rng.gen_bool(0.5) {// 0.5의 확률로 true 또는 false를 반환합니다.
+        true => y, // true일 경우 y를 반환합니다.
+        false => -y, // false일 경우 -y를 반환합니다.
     };
 }
 struct MainState {
