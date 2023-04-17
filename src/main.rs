@@ -5,6 +5,7 @@ use ggez::input::keyboard::{self, KeyCode}; // 키보드 모듈
 use ggez::nalgebra as na; // 벡터, 행렬 등의 수학 연산 모듈
 use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과 반환)
 use rand::{self, thread_rng, Rng}; // 랜덤 모듈
+
 const RACKET_HEIGHT: f32 = 100.0; // 라켓의 높이
 const RACKET_WIDTH: f32 = 20.0; // 라켓의 너비
 const RACKET_WIDTH_HALF: f32 = RACKET_WIDTH * 0.5; // 라켓의 너비의 절반
@@ -56,13 +57,20 @@ impl MainState {
 }
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        let dt = ggez::timer::delta(ctx).as_secs_f32();
-        let (screen_w, screen_h) = graphics::drawable_size(ctx);
+        let dt = ggez::timer::delta(ctx).as_secs_f32(); // 프레임에 상관없이 경과한 시간을 초로 포현
+        let (screen_w, screen_h) = graphics::drawable_size(ctx); //스크린 사이즈를 저장하는 변수
+
+        // 키 입력에 따라 라켓을 움직이도록 함.
+        // W, S는 player_1, Up, Down은 player_2
         move_racket(&mut self.player_1_pos, KeyCode::W, -1.0, ctx);
         move_racket(&mut self.player_1_pos, KeyCode::S, 1.0, ctx);
         move_racket(&mut self.player_2_pos, KeyCode::Up, -1.0, ctx);
         move_racket(&mut self.player_2_pos, KeyCode::Down, 1.0, ctx);
-        self.ball_pos += self.ball_vel * dt;
+
+        self.ball_pos += self.ball_vel * dt; // 프레임에 상관없이 일정한 속도로 공을 움직이도록 함.
+
+        // 게임 오버
+        // 공의 위치를 중앙으로 되돌리고 속도를 랜덤하게 해서 다시 시작함.
         if self.ball_pos.x < 0.0 {
             self.ball_pos.x = screen_w * 0.5;
             self.ball_pos.y = screen_h * 0.5;
@@ -73,6 +81,9 @@ impl event::EventHandler for MainState {
             self.ball_pos.y = screen_h * 0.5;
             randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
         }
+
+        // 공이 스크린의 높이(위아래)를 벗어나는 경우
+        // ball의 속도의 y값을 반대로 돌림
         if self.ball_pos.y < BALL_SIZE_HALF {
             self.ball_pos.y = BALL_SIZE_HALF;
             self.ball_vel.y = self.ball_vel.y.abs();
@@ -80,6 +91,8 @@ impl event::EventHandler for MainState {
             self.ball_pos.y = screen_h - BALL_SIZE_HALF;
             self.ball_vel.y = -self.ball_vel.y.abs();
         }
+        // player 타일과 ball 상호작용
+        // 플레이어 라켓과 ball이 부딪히는 경우 ball의 속도의 x를 반대로 바꿈
         let intersects_player_1 = self.ball_pos.x - BALL_SIZE_HALF
             < self.player_1_pos.x + RACKET_WIDTH_HALF
             && self.ball_pos.x + BALL_SIZE_HALF > self.player_1_pos.x - RACKET_WIDTH_HALF
@@ -99,37 +112,51 @@ impl event::EventHandler for MainState {
         Ok(())
     }
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, graphics::BLACK); //background 색
+        graphics::clear(ctx, graphics::BLACK); // 매번 그릴때마다 이전에 그려진 부분은 지워야함. 그래서 바탕색으로 지움.
+
+        // 플레이어 라켓인 사각형 그리기
         let racket_rect = graphics::Rect::new(
             -RACKET_WIDTH_HALF,
             -RACKET_HIGHT_HALF,
             RACKET_WIDTH,
             RACKET_HEIGHT,
         );
+        // 사각형의 오브젝트를 생성하는 함수
         let racket_mesh = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
             racket_rect,
             graphics::WHITE,
         )?;
+
+        // 공 그리는 부분, 사각형
         let ball_rect = graphics::Rect::new(-BALL_SIZE_HALF, -BALL_SIZE_HALF, BALL_SIZE, BALL_SIZE);
+        // 똑같이 사각형 오브젝트 생성
         let ball_mesh = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
             ball_rect,
             graphics::WHITE,
         )?;
+
+        // 그래픽 렌더링 방식을 기본적으로 초기화된 값을 사용
         let mut draw_param = graphics::DrawParam::default();
+
+        // player_1의 위치를 기준으로 해서 그림
         draw_param.dest = self.player_1_pos.into();
         graphics::draw(ctx, &racket_mesh, draw_param)?;
+        // player_2
         draw_param.dest = self.player_2_pos.into();
         graphics::draw(ctx, &racket_mesh, draw_param)?;
+        // player_3
         draw_param.dest = self.ball_pos.into();
         graphics::draw(ctx, &ball_mesh, draw_param)?;
-        graphics::present(ctx);
+
+        graphics::present(ctx); // 현재 프레임을 출력, 이 부분이 없으면 최종적으로 화면에 그려지지 않음
         Ok(())
     }
 }
+
 fn main() -> GameResult {
     // 게임 컨텍스트와 이벤트 루프를 생성합니다.
     //컨텍스트는 게임의 실행 환경, 자원 등의  정보를 담은 객체
