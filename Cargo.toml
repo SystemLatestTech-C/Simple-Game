@@ -1,5 +1,5 @@
 [package]
-name = "pongGame"
+name = "gpt_pp" //본인의 프로젝트로 수정 필요
 version = "0.1.0"
 edition = "2021"
 
@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 ggez = "0.5.1"
 rand = "0.7.3"
+tokio = { version = "1.0", features = ["full"] }
