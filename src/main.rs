@@ -136,7 +136,7 @@ impl event::EventHandler for MainState {
     }
 }
 fn main() -> GameResult {
-    // 게임 컨텍스트와 이벤트 루프를 생성합니다.
+    // 게임 컨텍스트와 이벤트 루프를 생성합니다.ss
     //컨텍스트는 게임의 실행 환경, 자원 등의  정보를 담은 객체
     //이벤트 루프는 게임의 메인 루프로 게임 상태를 업데이트하고, 화면을 렌더링하는 역할
     let cb = ggez::ContextBuilder::new("Ping-pong", "Name")
