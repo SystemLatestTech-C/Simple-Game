@@ -3,9 +3,9 @@ use ggez::event; // 이벤트 모듈
 use ggez::graphics; // 그래픽 모듈
 use ggez::input::keyboard::{self, KeyCode}; // 키보드 모듈
 use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과 반환)
-use std::thread;
-use std::io::{Read, Write};
 use std::env;
+use std::io::{Read, Write};
+use std::thread;
 
 //use ggez::nalgebra as na; // 벡터, 행렬 등의 수학 연산 모듈
 //use std::net::TcpStream;
@@ -16,17 +16,21 @@ use std::env;
 //use rand::{self, thread_rng, Rng}; // 랜덤 모듈
 //use std::io::{ErrorKind};
 
+mod app_state;
 mod constants; // 상수를 관리하는 모듈입니다.
-mod state_func;  // move_racket, randomize_vec 함수를 관리하는 모듈입니다.
-mod server;     // 서버를 관리하는 모듈입니다.
-mod main_state;  // 플레이어1을 관리하는 모듈입니다.
-mod player_state;  // 플레이어2를 관리하는 모듈입니다.
+mod main_state; // 플레이어1을 관리하는 모듈입니다.
+mod player_state; // 플레이어2를 관리하는 모듈입니다.
+mod server; // 서버를 관리하는 모듈입니다.
+mod state_func; // move_racket, randomize_vec 함수를 관리하는 모듈입니다.
+mod title_state;
 
+use app_state::AppState;
 use constants::*;
-use state_func::*;
-use server::listen_for_clients;
 use main_state::MainState;
 use player_state::PlayerState;
+use server::listen_for_clients;
+use state_func::*;
+use title_state::TitleState;
 
 /**
 *   main 함수입니다.
@@ -51,12 +55,12 @@ fn main() -> GameResult {
             let server_thread = thread::spawn(|| {
                 listen_for_clients();
             });
-            let mut state = MainState::new(ctx); // Mainstate를 초기화합니다.
+            let mut state = AppState::new(ctx); //임시로 변경
             event::run(ctx, event_loop, &mut state).unwrap();
         }
         "player" => {
             println!("플레이어2 접속");
-            let mut state = PlayerState::new(ctx); // PlayerState를 초기화합니다.
+            let mut state = AppState::new(ctx); //임시로 변경
             event::run(ctx, event_loop, &mut state).unwrap();
         }
         _ => {
