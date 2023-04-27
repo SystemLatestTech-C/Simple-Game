@@ -15,6 +15,7 @@ use crate::constants::*; // constants.rs 파일을 가져옵니다.
 pub fn move_racket(pos: &mut na::Point2<f32>, keycode: KeyCode, y_dir: f32, ctx: &mut Context) {
     let screen_h = graphics::drawable_size(ctx).1; // 화면의 높이를 가져옵니다.
     let dt = ggez::timer::delta(ctx).as_secs_f32(); // 1프레임당 흐른 시간(델타 타임)을 가져옵니다.
+
     if keyboard::is_key_pressed(ctx, keycode) {
         // 해당 키가 눌렸는지 확인합니다.
         pos.y += y_dir * PLAYER_SPEED * dt; // 라켓의 y 좌표를 업데이트합니다.

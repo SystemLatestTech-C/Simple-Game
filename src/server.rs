@@ -6,26 +6,27 @@ use std::io::{Read, Write};
 use crate::constants::*; // constants.rs 파일을 가져옵니다.
 
 /**
-*   서버부분입니다.
-*   1. TcpListener를 통해서 플레이어1,2의 접속을 받습니다.
-*   2. 플레이어1,2의 소켓을 통해서 데이터를 주고받습니다. 이때 각 소켓은 별도의 스레드에서 동작합니다.
-*
-*   각 소켓의 버퍼에 담기는 공통 정보 : 각 플레이어의 라켓의 y좌표 , 크기는 4바이트입니다.
-*   플레이어1 : 4바이트의 라켓1의 y좌표에 추가로 4바이트의 공의 x좌표, 4바이트의 공의 y좌표를 담아서 플레이어2 소켓에 전송
-*   플레이어2 : 4바이트의 라켓2의 y좌표만을 플레이어1 소켓에 전송
-*
-*   각 플레이어는 전달받은 정보를 통해 라켓1, 라켓2, 공의 좌표를 업데이트해서 동일한 화면을 그리는 것이 가능합니다.
+ *   서버부분입니다.
+ *   1. TcpListener를 통해서 플레이어1,2의 접속을 받습니다.
+ *   2. 플레이어1,2의 소켓을 통해서 데이터를 주고받습니다. 이때 각 소켓은 별도의 스레드에서 동작합니다.
+ *
+ *   각 소켓의 버퍼에 담기는 공통 정보 : 각 플레이어의 라켓의 y좌표 , 크기는 4바이트입니다.
+ *   플레이어1 : 4바이트의 라켓1의 y좌표에 추가로 4바이트의 공의 x좌표, 4바이트의 공의 y좌표를 담아서 플레이어2 소켓에 전송
+ *   플레이어2 : 4바이트의 라켓2의 y좌표만을 플레이어1 소켓에 전송
+ *
+ *   각 플레이어는 전달받은 정보를 통해 라켓1, 라켓2, 공의 좌표를 업데이트해서 동일한 화면을 그리는 것이 가능합니다.
  */
 
 pub fn listen_for_clients() -> io::Result<()> {
+
     let listener = TcpListener::bind(SERVER_ADDR)?;
-    println!("Server listening on 127.0.0.1:8080");
+    println!("Server listening on {}", SERVER_ADDR);
 
-    let (mut client_1_socket, _) = listener.accept()?;
-    println!("Client 1 connected");
+    let (mut client_1_socket, client_1_addr) = listener.accept()?;
+    println!("Client 1 connected from {}", client_1_addr);
 
-    let (mut client_2_socket, _) = listener.accept()?;
-    println!("Client 2 connected");
+    let (mut client_2_socket, client_2_addr) = listener.accept()?;
+    println!("Client 2 connected from {}", client_2_addr);
 
     let mut client_1_socket_clone = client_1_socket.try_clone()?;
     let mut client_2_socket_clone = client_2_socket.try_clone()?;
