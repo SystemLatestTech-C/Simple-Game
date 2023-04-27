@@ -14,6 +14,7 @@ use std::net::{SocketAddr, Ipv4Addr, TcpStream, Shutdown};
 
 use crate::constants::*; // constants.rs 파일을 가져옵니다.
 use crate::state_func::*; // state_func.rs 파일을 가져옵니다.
+use crate::server::listen_for_clients;
 
 /**
  *   플레이어1(호스트) 구조체입니다.
@@ -38,6 +39,14 @@ pub struct GameState {
 impl GameState {
     //MainState 구조체의 인스턴스를 생성하는 함수
     pub fn new(ctx: &mut Context, state: i32) -> Self {
+
+        if state == 1{
+            println!("호스트 접속");
+            let server_thread = thread::spawn(|| {
+                listen_for_clients();
+            });
+        }
+
         let server_socket = TcpStream::connect(SERVER_ADDR).map_err(|e| {
             io::Error::new(ErrorKind::Other, format!("Failed to connect to server: {}", e))
         }).unwrap();
@@ -66,8 +75,6 @@ impl event::EventHandler for GameState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         let dt = ggez::timer::delta(ctx).as_secs_f32(); // 프레임에 상관없이 경과한 시간을 초로 포현
         let (screen_w, screen_h) = graphics::drawable_size(ctx); //스크린 사이즈를 저장하는 변수
-
-
 
         // 키 입력에 따라 라켓을 움직이도록 함.
         // W, S는 player_1, Up, Down은 player_2

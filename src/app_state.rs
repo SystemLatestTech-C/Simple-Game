@@ -41,10 +41,6 @@ impl AppState {
                 self.current_state = CurrentState::Main(GameState::new(ctx, 0));
             }
             StateTransition::Multi => {
-                println!("호스트 접속");
-                let server_thread = thread::spawn(|| {
-                listen_for_clients();
-                });
                 self.current_state = CurrentState::Main(GameState::new(ctx, 1));
             }
             _ => {}
