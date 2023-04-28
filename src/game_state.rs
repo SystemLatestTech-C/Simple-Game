@@ -1,28 +1,17 @@
 use ggez::nalgebra as na; // 벡터, 행렬 등의 수학 연산 모듈
-//use std::net::TcpStream;
 use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과 반환)
 use std::io;
 use std::io::{Read, Write};
 use std::io::{ErrorKind};
 use ggez::graphics; // 그래픽 모듈
 use ggez::event; // 이벤트 모듈
-use ggez::input::keyboard::{self, KeyCode};
-use tokio::net::TcpListener; // 키보드 모듈
+use ggez::input::keyboard::{KeyCode};
 use std::thread;
-use net2::TcpBuilder;
-use std::net::{SocketAddr, Ipv4Addr, TcpStream, Shutdown};
+use std::net::TcpStream;
 
 use crate::constants::*; // constants.rs 파일을 가져옵니다.
 use crate::state_func::*; // state_func.rs 파일을 가져옵니다.
 use crate::server::listen_for_clients;
-
-/**
- *   플레이어1(호스트) 구조체입니다.
- *   기본적으로는 본래의 MainState와 동일하며 서버관련해서 추가된 부분이 있습니다.
- *   1. 구조체 필드에 server_socket을 추가합니다.
- *   2. update 함수 내에 서버에 라켓1의 y좌표 및 공의 x,y좌표를 전송하고, 서버로부터 라켓2의 y좌표를 받아오는 부분 추가
- *   3. draw부분은 동일 (단, 서버를 통해 받아온 라켓2의 y좌표를 사용해서 그림을 그립니다.)
- */
 
 pub struct GameState {
     // player1,2 에 대한 posintion 값 feild 설정
@@ -67,11 +56,7 @@ impl GameState {
             server_socket,
         }
     }
-    fn connect_with_local_port(local_addr: SocketAddr, server_addr: SocketAddr) -> io::Result<TcpStream> {
-        let socket = TcpBuilder::new_v4()?;
-        socket.bind(local_addr)?;
-        socket.connect(server_addr)
-    }
+
 }
 impl event::EventHandler for GameState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
