@@ -18,29 +18,26 @@ use std::thread;
 
 mod app_state;
 mod constants; // 상수를 관리하는 모듈입니다.
-mod main_state; // 플레이어1을 관리하는 모듈입니다.
-mod player_state; // 플레이어2를 관리하는 모듈입니다.
 mod server; // 서버를 관리하는 모듈입니다.
 mod state_func; // move_racket, randomize_vec 함수를 관리하는 모듈입니다.
 mod title_state;
+mod game_state;
 
 use app_state::AppState;
 use constants::*;
-use main_state::MainState;
-use player_state::PlayerState;
 use server::listen_for_clients;
 use state_func::*;
 use title_state::TitleState;
 
 /**
-*   main 함수입니다.
-*   처음 4줄은 이전에 작성한 main과 동일합니다.
-*   그 후, 실행 인자에 따라서 서버+호스트(플레이어1)를 실행할지, 플레이어2를 실행할지를 결정합니다.
-*   cargo run -- host 로 실행할 시 서버를 실행하고 MainState를 사용해서 실행합니다.
-*   cargo run -- player 로 실행할 시 플레이어2를 실행하고 PlayerState를 사용해서 실행합니다.
-*
-*   주의점 : 서버는 호스트가 실행될 때 시작하기 때문에, cargo run -- host 를 먼저 실행해야 합니다.
-*/
+ *   main 함수입니다.
+ *   처음 4줄은 이전에 작성한 main과 동일합니다.
+ *   그 후, 실행 인자에 따라서 서버+호스트(플레이어1)를 실행할지, 플레이어2를 실행할지를 결정합니다.
+ *   cargo run -- host 로 실행할 시 서버를 실행하고 MainState를 사용해서 실행합니다.
+ *   cargo run -- player 로 실행할 시 플레이어2를 실행하고 PlayerState를 사용해서 실행합니다.
+ *
+ *   주의점 : 서버는 호스트가 실행될 때 시작하기 때문에, cargo run -- host 를 먼저 실행해야 합니다.
+ */
 
 fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("Ping-pong", "Name")
@@ -49,24 +46,26 @@ fn main() -> GameResult {
     graphics::set_window_title(ctx, "Ping-Pong"); // 창 제목을 설정합니다.
 
     let args: Vec<String> = env::args().collect();
-    match args[1].as_str() {
-        "host" => {
-            println!("호스트 접속");
-            let server_thread = thread::spawn(|| {
-                listen_for_clients();
-            });
-            let mut state = AppState::new(ctx); //임시로 변경
-            event::run(ctx, event_loop, &mut state).unwrap();
-        }
-        "player" => {
-            println!("플레이어2 접속");
-            let mut state = AppState::new(ctx); //임시로 변경
-            event::run(ctx, event_loop, &mut state).unwrap();
-        }
-        _ => {
-            println!("Usage: cargo run -- [server|player1|player2]");
-        }
-    }
+    // match args[1].as_str() {
+    //     "host" => {
+    //         println!("호스트 접속");
+    //         let server_thread = thread::spawn(|| {
+    //             listen_for_clients();
+    //         });
+    //         let mut state = AppState::new(ctx); //임시로 변경
+    //         event::run(ctx, event_loop, &mut state).unwrap();
+    //     }
+    //     "player" => {
+    //         println!("플레이어2 접속");
+    //         let mut state = AppState::new(ctx); //임시로 변경
+    //         event::run(ctx, event_loop, &mut state).unwrap();
+    //     }
+    //     _ => {
+    //         println!("Usage: cargo run -- [server|player1|player2]");
+    //     }
+    // }
+    let mut state = AppState::new(ctx); //임시로 변경
+    event::run(ctx, event_loop, &mut state).unwrap();
 
     Ok(()) //성공적으로 완료, 반환값 없음
 }

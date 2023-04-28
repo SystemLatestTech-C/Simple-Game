@@ -11,6 +11,7 @@ rand = "0.7.3"
 serde = "1.0"
 serde_json = "1.0"
 socket2 = "0.4"
+net2 = "0.2"
 
 [dependencies.tokio]
 version = "1.0"
