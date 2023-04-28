@@ -34,7 +34,8 @@ pub struct GameState {
     ball_vel: na::Vector2<f32>,
     //ball의 방향을 나타내야 하기 때문에 2차원 벡터를 나타내는 Vector2타입으로 설정합니다.
     state: i32,
-    server_socket: TcpStream,
+    //server_socket: TcpStream,
+    server_socket: Option<TcpStream>,
 }
 impl GameState {
     //MainState 구조체의 인스턴스를 생성하는 함수
@@ -47,9 +48,10 @@ impl GameState {
             });
         }
 
-        let server_socket = TcpStream::connect(SERVER_ADDR).map_err(|e| {
+
+        let server_socket = (TcpStream::connect(SERVER_ADDR).map_err(|e| {
             io::Error::new(ErrorKind::Other, format!("Failed to connect to server: {}", e))
-        }).unwrap();
+        }).ok());
 
 
         let (screen_w, screen_h) = graphics::drawable_size(ctx);// 현재 게임 윈도우의 너비와 높이 정보를 screen_w, screen_h에 저장
@@ -132,16 +134,19 @@ impl event::EventHandler for GameState {
             let ball_y_bytes = self.ball_pos.y.to_ne_bytes();
             let player_position_ball_pos_data = [&player_position_bytes[..], &ball_x_bytes[..], &ball_y_bytes[..]].concat();
 
-            self.server_socket.write_all(&player_position_ball_pos_data).map_err(|e| {
-                io::Error::new(ErrorKind::Other, format!("Failed to send player position to server: {}", e))
-            })?;
-
+            if let Some(server_socket) = &mut self.server_socket {
+                server_socket.write_all(&player_position_ball_pos_data).map_err(|e| {
+                    io::Error::new(ErrorKind::Other, format!("Failed to send player position to server: {}", e))
+                })?;
+            }
 
             // 플레이어 2의 라켓 위치를 서버에서 받습니다.
             let mut buffer = [0u8; 4];
-            self.server_socket.read_exact(&mut buffer).map_err(|e| {
-                io::Error::new(ErrorKind::Other, format!("Failed to receive data from server: {}", e))
-            })?;
+            if let Some(server_socket) = &mut self.server_socket {
+                server_socket.read_exact(&mut buffer).map_err(|e| {
+                    io::Error::new(ErrorKind::Other, format!("Failed to receive data from server: {}", e))
+                })?;
+            }
             self.player_2_pos.y = f32::from_le_bytes(buffer);
 
         } else if self.state == 2 {
@@ -151,15 +156,19 @@ impl event::EventHandler for GameState {
 
             // 플레이어 2의 라켓 위치를 서버에 전송합니다.
             let player_2_position = self.player_2_pos.y.to_le_bytes();
-            self.server_socket.write_all(&player_2_position).map_err(|e| {
-                io::Error::new(ErrorKind::Other, format!("Failed to send data to server: {}", e))
-            })?;
+            if let Some(server_socket) = &mut self.server_socket {
+                server_socket.write_all(&player_2_position).map_err(|e| {
+                    io::Error::new(ErrorKind::Other, format!("Failed to send data to server: {}", e))
+                })?;
+            }
 
             // 플레이어 1의 라켓 위치, 공의 위치를 서버에서 받습니다.
             let mut buffer = [0u8; 12];
-            self.server_socket.read_exact(&mut buffer).map_err(|e| {
-                io::Error::new(ErrorKind::Other, format!("Failed to receive data from server: {}", e))
-            })?;
+            if let Some(server_socket) = &mut self.server_socket {
+                server_socket.read_exact(&mut buffer).map_err(|e| {
+                    io::Error::new(ErrorKind::Other, format!("Failed to receive data from server: {}", e))
+                })?;
+            }
 
             self.player_1_pos.y = f32::from_le_bytes([buffer[0], buffer[1], buffer[2], buffer[3]]);
             self.ball_pos.x = f32::from_le_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]);
@@ -168,7 +177,50 @@ impl event::EventHandler for GameState {
             // solo
             move_racket(&mut self.player_2_pos, KeyCode::Up, -1.0, ctx);
             move_racket(&mut self.player_2_pos, KeyCode::Down, 1.0, ctx);
-            self.player_1_pos.y += if self.ball_pos.y > self.player_1_pos.y {1.9} else { -1.9 }
+            self.player_1_pos.y += if self.ball_pos.y > self.player_1_pos.y {1.9} else { -1.9 };
+
+            self.ball_pos += self.ball_vel * dt; // 프레임에 상관없이 일정한 속도로 공을 움직이도록 함.
+
+            // 게임 오버
+            // 공의 위치를 중앙으로 되돌리고 속도를 랜덤하게 해서 다시 시작함.
+            if self.ball_pos.x < 0.0 {
+                self.ball_pos.x = screen_w * 0.5;
+                self.ball_pos.y = screen_h * 0.5;
+                randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
+            }
+            if self.ball_pos.x > screen_w {
+                self.ball_pos.x = screen_w * 0.5;
+                self.ball_pos.y = screen_h * 0.5;
+                randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
+            }
+
+            // 공이 스크린의 높이(위아래)를 벗어나는 경우
+            // ball의 속도의 y값을 반대로 돌림
+            if self.ball_pos.y < BALL_SIZE_HALF {
+                self.ball_pos.y = BALL_SIZE_HALF;
+                self.ball_vel.y = self.ball_vel.y.abs();
+            } else if self.ball_pos.y > screen_h - BALL_SIZE_HALF {
+                self.ball_pos.y = screen_h - BALL_SIZE_HALF;
+                self.ball_vel.y = -self.ball_vel.y.abs();
+            }
+            // player 타일과 ball 상호작용
+            // 플레이어 라켓과 ball이 부딪히는 경우 ball의 속도의 x를 반대로 바꿈
+            let intersects_player_1 = self.ball_pos.x - BALL_SIZE_HALF
+                < self.player_1_pos.x + RACKET_WIDTH_HALF
+                && self.ball_pos.x + BALL_SIZE_HALF > self.player_1_pos.x - RACKET_WIDTH_HALF
+                && self.ball_pos.y - BALL_SIZE_HALF < self.player_1_pos.y + RACKET_WIDTH_HALF
+                && self.ball_pos.y + BALL_SIZE_HALF > self.player_1_pos.y - RACKET_WIDTH_HALF;
+            if intersects_player_1 {
+                self.ball_vel.x = self.ball_vel.x.abs();
+            }
+            let intersects_player_2 = self.ball_pos.x - BALL_SIZE_HALF
+                < self.player_2_pos.x + RACKET_WIDTH_HALF
+                && self.ball_pos.x + BALL_SIZE_HALF > self.player_2_pos.x - RACKET_WIDTH_HALF
+                && self.ball_pos.y - BALL_SIZE_HALF < self.player_2_pos.y + RACKET_WIDTH_HALF
+                && self.ball_pos.y + BALL_SIZE_HALF > self.player_2_pos.y - RACKET_WIDTH_HALF;
+            if intersects_player_2 {
+                self.ball_vel.x = -self.ball_vel.x.abs();
+            }
         }
 
 
