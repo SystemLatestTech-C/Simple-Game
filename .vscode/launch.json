@@ -7,38 +7,38 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'pongGame'",
+      "name": "Debug executable 'compat'",
       "cargo": {
         "args": [
           "build",
-          "--bin=pongGame",
-          "--package=pongGame"
+          "--bin=compat",
+          "--package=compat"
         ],
         "filter": {
-          "name": "pongGame",
+          "name": "compat",
           "kind": "bin"
         }
       },
-      "args": [],
+      "args": ["host"],
       "cwd": "${workspaceFolder}"
     },
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'pongGame'",
+      "name": "Debug unit tests in executable 'compat'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bin=pongGame",
-          "--package=pongGame"
+          "--bin=compat",
+          "--package=compat"
         ],
         "filter": {
-          "name": "pongGame",
+          "name": "compat",
           "kind": "bin"
         }
       },
-      "args": [],
+      "args": ["host"],
       "cwd": "${workspaceFolder}"
     }
   ]
