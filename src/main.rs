@@ -18,10 +18,11 @@ use std::thread;
 
 mod app_state;
 mod constants; // 상수를 관리하는 모듈입니다.
+mod end_state;
+mod game_state;
 mod server; // 서버를 관리하는 모듈입니다.
 mod state_func; // move_racket, randomize_vec 함수를 관리하는 모듈입니다.
 mod title_state;
-mod game_state;
 
 use app_state::AppState;
 use constants::*;
