@@ -315,6 +315,7 @@ name = "compat"
 version = "0.1.0"
 dependencies = [
  "ggez",
+ "net2",
  "rand 0.7.3",
  "serde",
  "serde_json",
@@ -1311,6 +1312,17 @@ dependencies = [
  "num-traits 0.2.15",
  "rand 0.6.5",
  "typenum",
+]
+
+[[package]]
+name = "net2"
+version = "0.2.38"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74d0df99cfcd2530b2e694f6e17e7f37b8e26bb23983ac530c0c97408837c631"
+dependencies = [
+ "cfg-if 0.1.10",
+ "libc",
+ "winapi",
 ]
 
 [[package]]

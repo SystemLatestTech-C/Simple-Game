@@ -1,19 +1,22 @@
+use ggez::event; // 이벤트 모듈
+use ggez::graphics; // 그래픽 모듈
+use ggez::input::keyboard::KeyCode;
 use ggez::nalgebra as na; // 벡터, 행렬 등의 수학 연산 모듈
+use ggez::timer;
+
 use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과 반환)
 use std::io;
+use std::io::ErrorKind;
 use std::io::{Read, Write};
-use std::io::{ErrorKind};
-use ggez::graphics; // 그래픽 모듈
-use ggez::event; // 이벤트 모듈
-use ggez::input::keyboard::{KeyCode};
-use std::thread;
 use std::net::TcpStream;
+use std::thread;
 
 use crate::constants::*; // constants.rs 파일을 가져옵니다.
-use crate::state_func::*; // state_func.rs 파일을 가져옵니다.
 use crate::server::listen_for_clients;
+use crate::state_func::*; // state_func.rs 파일을 가져옵니다.
 
 pub struct GameState {
+    pub state_transition: StateTransition, //스테이트를 변경하고자 할 때 변경될 ENUM 값
     // player1,2 에 대한 posintion 값 feild 설정
     player_1_pos: na::Point2<f32>,
     //Point2는 2차원 공간에서의 점(위치)를 나타냅니다.
@@ -22,50 +25,66 @@ pub struct GameState {
     ball_pos: na::Point2<f32>,
     ball_vel: na::Vector2<f32>,
     //ball의 방향을 나타내야 하기 때문에 2차원 벡터를 나타내는 Vector2타입으로 설정합니다.
+    player_1_score: i32, //스코어 텍스트
+    player_2_score: i32, //스코어 텍스트 2
     state: i32,
     //server_socket: TcpStream,
     server_socket: Option<TcpStream>,
+    start_timer: f64,
+    //현재 화면이 보여지기 전에 (싱글플레이 버튼을 누르면 화면 표시에 다소 시간이 소요) 미리 게임이 동작해서 시작부터 스코어가 1:0 인 오류가 발생함
+    //임시로 3초가 지나야 게임의 update가 동작하도록 타이머 설정.
 }
 impl GameState {
     //MainState 구조체의 인스턴스를 생성하는 함수
     pub fn new(ctx: &mut Context, state: i32) -> Self {
-
-        if state == 1{
+        if state == 1 {
             println!("호스트 접속");
             let server_thread = thread::spawn(|| {
                 listen_for_clients();
             });
         }
 
+        let server_socket = (TcpStream::connect(SERVER_ADDR)
+            .map_err(|e| {
+                io::Error::new(
+                    ErrorKind::Other,
+                    format!("Failed to connect to server: {}", e),
+                )
+            })
+            .ok());
 
-        let server_socket = (TcpStream::connect(SERVER_ADDR).map_err(|e| {
-            io::Error::new(ErrorKind::Other, format!("Failed to connect to server: {}", e))
-        }).ok());
-
-
-        let (screen_w, screen_h) = graphics::drawable_size(ctx);// 현재 게임 윈도우의 너비와 높이 정보를 screen_w, screen_h에 저장
-        let (screen_w_half, screen_h_half) = (screen_w * 0.5, screen_h * 0.5);// screen half값 저장
-        let mut ball_vel = na::Vector2::new(0.0, 0.0);// ball_vel의 초기화
+        let (screen_w, screen_h) = graphics::drawable_size(ctx); // 현재 게임 윈도우의 너비와 높이 정보를 screen_w, screen_h에 저장
+        let (screen_w_half, screen_h_half) = (screen_w * 0.5, screen_h * 0.5); // screen half값 저장
+        let mut ball_vel = na::Vector2::new(0.0, 0.0); // ball_vel의 초기화
         randomize_vec(&mut ball_vel, 300.0, 300.0); //randomize_vec 함수를 써서 ball의 속도를 300.0으로 설정합니다.
         GameState {
+            state_transition: StateTransition::None,
             player_1_pos: na::Point2::new(RACKET_WIDTH_HALF, screen_h_half), //player1,2의 위치를 스크린 중간높이에 저장
             player_2_pos: na::Point2::new(screen_w - RACKET_WIDTH_HALF, screen_h_half),
-            ball_pos: na::Point2::new(screen_w_half, screen_h_half),// ball의 위치를 스크린 가운데로 저장
-            ball_vel: ball_vel,//ball_vel 필드 초기화
+            ball_pos: na::Point2::new(screen_w_half, screen_h_half), // ball의 위치를 스크린 가운데로 저장
+            ball_vel: ball_vel,                                      //ball_vel 필드 초기화
+            player_1_score: 0,
+            player_2_score: 0,
             state,
             server_socket,
+            start_timer: 3.0,
         }
     }
-
 }
 impl event::EventHandler for GameState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         let dt = ggez::timer::delta(ctx).as_secs_f32(); // 프레임에 상관없이 경과한 시간을 초로 포현
         let (screen_w, screen_h) = graphics::drawable_size(ctx); //스크린 사이즈를 저장하는 변수
 
+        if self.start_timer > 0.0 {
+            //3초가 지난 후에 업데이트 로직 실행
+            self.start_timer -= timer::delta(ctx).as_secs_f64();
+            return Ok(());
+        }
+
         // 키 입력에 따라 라켓을 움직이도록 함.
         // W, S는 player_1, Up, Down은 player_2
-        if self.state == 1{
+        if self.state == 1 {
             // host
             move_racket(&mut self.player_1_pos, KeyCode::Up, -1.0, ctx);
             move_racket(&mut self.player_1_pos, KeyCode::Down, 1.0, ctx);
@@ -114,26 +133,38 @@ impl event::EventHandler for GameState {
             }
 
             // 플레이어 1의 라켓 위치, 공의 좌표를 서버에 보냅니다.
-            let player_position_bytes= self.player_1_pos.y.to_ne_bytes();
+            let player_position_bytes = self.player_1_pos.y.to_ne_bytes();
             let ball_x_bytes = self.ball_pos.x.to_ne_bytes();
             let ball_y_bytes = self.ball_pos.y.to_ne_bytes();
-            let player_position_ball_pos_data = [&player_position_bytes[..], &ball_x_bytes[..], &ball_y_bytes[..]].concat();
+            let player_position_ball_pos_data = [
+                &player_position_bytes[..],
+                &ball_x_bytes[..],
+                &ball_y_bytes[..],
+            ]
+            .concat();
 
             if let Some(server_socket) = &mut self.server_socket {
-                server_socket.write_all(&player_position_ball_pos_data).map_err(|e| {
-                    io::Error::new(ErrorKind::Other, format!("Failed to send player position to server: {}", e))
-                })?;
+                server_socket
+                    .write_all(&player_position_ball_pos_data)
+                    .map_err(|e| {
+                        io::Error::new(
+                            ErrorKind::Other,
+                            format!("Failed to send player position to server: {}", e),
+                        )
+                    })?;
             }
 
             // 플레이어 2의 라켓 위치를 서버에서 받습니다.
             let mut buffer = [0u8; 4];
             if let Some(server_socket) = &mut self.server_socket {
                 server_socket.read_exact(&mut buffer).map_err(|e| {
-                    io::Error::new(ErrorKind::Other, format!("Failed to receive data from server: {}", e))
+                    io::Error::new(
+                        ErrorKind::Other,
+                        format!("Failed to receive data from server: {}", e),
+                    )
                 })?;
             }
             self.player_2_pos.y = f32::from_le_bytes(buffer);
-
         } else if self.state == 2 {
             // client
             move_racket(&mut self.player_2_pos, KeyCode::Up, -1.0, ctx);
@@ -143,7 +174,10 @@ impl event::EventHandler for GameState {
             let player_2_position = self.player_2_pos.y.to_le_bytes();
             if let Some(server_socket) = &mut self.server_socket {
                 server_socket.write_all(&player_2_position).map_err(|e| {
-                    io::Error::new(ErrorKind::Other, format!("Failed to send data to server: {}", e))
+                    io::Error::new(
+                        ErrorKind::Other,
+                        format!("Failed to send data to server: {}", e),
+                    )
                 })?;
             }
 
@@ -151,7 +185,10 @@ impl event::EventHandler for GameState {
             let mut buffer = [0u8; 12];
             if let Some(server_socket) = &mut self.server_socket {
                 server_socket.read_exact(&mut buffer).map_err(|e| {
-                    io::Error::new(ErrorKind::Other, format!("Failed to receive data from server: {}", e))
+                    io::Error::new(
+                        ErrorKind::Other,
+                        format!("Failed to receive data from server: {}", e),
+                    )
                 })?;
             }
 
@@ -162,7 +199,11 @@ impl event::EventHandler for GameState {
             // solo
             move_racket(&mut self.player_2_pos, KeyCode::Up, -1.0, ctx);
             move_racket(&mut self.player_2_pos, KeyCode::Down, 1.0, ctx);
-            self.player_1_pos.y += if self.ball_pos.y > self.player_1_pos.y {1.9} else { -1.9 };
+            self.player_1_pos.y += if self.ball_pos.y > self.player_1_pos.y {
+                1.9
+            } else {
+                -1.9
+            };
 
             self.ball_pos += self.ball_vel * dt; // 프레임에 상관없이 일정한 속도로 공을 움직이도록 함.
 
@@ -172,11 +213,13 @@ impl event::EventHandler for GameState {
                 self.ball_pos.x = screen_w * 0.5;
                 self.ball_pos.y = screen_h * 0.5;
                 randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
+                self.player_2_score += 1; //스코어보드에 점수 추가
             }
             if self.ball_pos.x > screen_w {
                 self.ball_pos.x = screen_w * 0.5;
                 self.ball_pos.y = screen_h * 0.5;
                 randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
+                self.player_1_score += 1; //스코어보드에 점수 추가
             }
 
             // 공이 스크린의 높이(위아래)를 벗어나는 경우
@@ -188,6 +231,14 @@ impl event::EventHandler for GameState {
                 self.ball_pos.y = screen_h - BALL_SIZE_HALF;
                 self.ball_vel.y = -self.ball_vel.y.abs();
             }
+
+            //승리 조건 달성 시 END 화면으로
+            if self.player_1_score > 4 {
+                self.state_transition = StateTransition::P1Win;
+            } else if self.player_2_score > 4 {
+                self.state_transition = StateTransition::P2Win;
+            }
+
             // player 타일과 ball 상호작용
             // 플레이어 라켓과 ball이 부딪히는 경우 ball의 속도의 x를 반대로 바꿈
             let intersects_player_1 = self.ball_pos.x - BALL_SIZE_HALF
@@ -207,7 +258,6 @@ impl event::EventHandler for GameState {
                 self.ball_vel.x = -self.ball_vel.x.abs();
             }
         }
-
 
         Ok(())
     }
@@ -251,6 +301,23 @@ impl event::EventHandler for GameState {
         // player_3
         draw_param.dest = self.ball_pos.into();
         graphics::draw(ctx, &ball_mesh, draw_param)?;
+
+        // 스코어보드 문자열 만들기
+        let scoreboard_str = format!("{} : {}", self.player_1_score, self.player_2_score);
+
+        // 스코어보드 Text 객체 생성
+        let scoreboard_text = graphics::Text::new(scoreboard_str);
+
+        // 스코어보드 그리기 위치 설정
+        let screen_size = graphics::drawable_size(ctx);
+        let scoreboard_pos = na::Point2::new(screen_size.0 / 2.0, 50.0);
+
+        // 스코어보드 그리기
+        graphics::draw(
+            ctx,
+            &scoreboard_text,
+            (scoreboard_pos, 0.0, graphics::WHITE),
+        )?;
 
         graphics::present(ctx); // 현재 프레임을 출력, 이 부분이 없으면 최종적으로 화면에 그려지지 않음
         Ok(())

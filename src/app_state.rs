@@ -4,8 +4,9 @@ use ggez::input::keyboard::{self, KeyCode}; // 키보드 모듈
 use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과 반환)
 
 use crate::constants::StateTransition;
-use crate::title_state::TitleState;
+use crate::end_state::EndState;
 use crate::game_state::GameState;
+use crate::title_state::TitleState;
 
 // AppState는 게임의 현재 State를 인자로 가지는 ENUM을 갖고, ENUM의 값에 해당하는 스테이트의 이벤트핸들러 함수를 수행합니다.
 // 즉 동작에 따라 씬을 전환하는 역할을 수행하는, event::run에서 사용될 최상위 스테이트입니다.
@@ -30,14 +31,17 @@ impl AppState {
     //각 State의 Stage Transition을 인자로 받아서, 현재 페이지(State)를 인자로 받은 스테이트로 변경하는 함수
     pub fn change_state(&mut self, ctx: &mut Context, state_transition: StateTransition) {
         match state_transition {
-            StateTransition::ToTitle => {
-                self.current_state = CurrentState::Title(TitleState::new(ctx));
-            }
             StateTransition::Solo => {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 0));
             }
             StateTransition::Multi => {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 1));
+            }
+            StateTransition::P1Win => {
+                self.current_state = CurrentState::End(EndState::new(ctx, 1));
+            }
+            StateTransition::P2Win => {
+                self.current_state = CurrentState::End(EndState::new(ctx, 2));
             }
             _ => {}
         }
@@ -48,6 +52,7 @@ impl AppState {
 pub enum CurrentState {
     Title(TitleState),
     Game(GameState),
+    End(EndState),
 }
 
 impl event::EventHandler for AppState {
@@ -67,7 +72,9 @@ impl event::EventHandler for AppState {
             CurrentState::Game(game_state) => {
                 // game_state를 사용하여 마우스 클릭 로직을 수행합니다.
             }
-
+            CurrentState::End(end_state) => {
+                // end_state를 사용하여 마우스 클릭 로직을 수행합니다.
+            }
         };
     }
 
@@ -76,18 +83,21 @@ impl event::EventHandler for AppState {
         match &mut self.current_state {
             CurrentState::Title(title_state) => {
                 // title_state를 사용하여 업데이트 로직을 수행합니다.
-                title_state.update(ctx).unwrap();
             }
             CurrentState::Game(game_state) => {
                 // game_state를 사용하여 업데이트 로직을 수행합니다.
                 game_state.update(ctx).unwrap();
+            }
+            CurrentState::End(end_state) => {
+                // end_state를 사용하여 업데이트 로직을 수행합니다.
             }
         }
 
         //현재 스테이트의, 스테이트 변경 요청을 체크 후 가져오기
         let state_transition = match &mut self.current_state {
             CurrentState::Title(title_state) => title_state.state_transition,
-            CurrentState::Game(game_state) => StateTransition::None,
+            CurrentState::Game(game_state) => game_state.state_transition,
+            CurrentState::End(end_state) => StateTransition::None,
         };
 
         //스테이트 변경 요청에 따라 스테이트를 변경
@@ -106,6 +116,10 @@ impl event::EventHandler for AppState {
             CurrentState::Game(game_state) => {
                 // game_state를 사용하여 렌더링 로직을 수행합니다.
                 game_state.draw(ctx).unwrap();
+            }
+            CurrentState::End(end_state) => {
+                // end_state를 사용하여 업데이트 로직을 수행합니다.
+                end_state.draw(ctx).unwrap();
             }
         }
         Ok(())
