@@ -8,14 +8,14 @@ use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과
 use std::io;
 use std::io::ErrorKind;
 use std::io::{Read, Write};
-use std::net::TcpStream;
 use std::net::Shutdown;
+use std::net::TcpStream;
 use std::thread;
 
 use crate::constants::*; // constants.rs 파일을 가져옵니다.
 use crate::state_func::*; // state_func.rs 파일을 가져옵니다.
 
-static mut socket_client:Option<TcpStream> = None;
+static mut socket_client: Option<TcpStream> = None;
 
 unsafe fn connect2server() {
     socket_client = (TcpStream::connect(SERVER_ADDR)
@@ -49,7 +49,6 @@ pub struct GameState {
 impl GameState {
     //MainState 구조체의 인스턴스를 생성하는 함수
     pub unsafe fn new(ctx: &mut Context, state: i32) -> Self {
-
         if state == 1 || state == 2 {
             connect2server();
         }
@@ -72,68 +71,31 @@ impl GameState {
 }
 impl event::EventHandler for GameState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        let dt = ggez::timer::delta(ctx).as_secs_f32(); // 프레임에 상관없이 경과한 시간을 초로 포현
+        let dt;
+        if ggez::timer::delta(ctx).as_secs_f32() > 1.0 {
+            dt = 0.0;
+        } else {
+            dt = ggez::timer::delta(ctx).as_secs_f32();
+        }
         let (screen_w, screen_h) = graphics::drawable_size(ctx); //스크린 사이즈를 저장하는 변수
         println!("{:?}", self.state);
-
-        // if self.start_timer > 0.0 {
-        //     //3초가 지난 후에 업데이트 로직 실행
-        //     self.start_timer -= timer::delta(ctx).as_secs_f64();
-        //     return Ok(());
-        // }
-
-        // 키 입력에 따라 라켓을 움직이도록 함.
-        // W, S는 player_1, Up, Down은 player_2
         if self.state == 1 {
             // host
             println!("{}", self.state);
+
+            //서버 연결 안되었으면 연결 시도하고 종료
+            // unsafe {
+            //     let connected_to_server = socket_client.is_some();
+            //     if !connected_to_server {
+            //         connect2server();
+            //         return Ok(());
+            //     }
+            // }
+
             move_racket(&mut self.player_1_pos, KeyCode::Up, -1.0, ctx);
             move_racket(&mut self.player_1_pos, KeyCode::Down, 1.0, ctx);
 
             self.ball_pos += self.ball_vel * dt; // 프레임에 상관없이 일정한 속도로 공을 움직이도록 함.
-
-            // 게임 오버
-            // 공의 위치를 중앙으로 되돌리고 속도를 랜덤하게 해서 다시 시작함.
-            if self.ball_pos.x < 0.0 {
-                self.ball_pos.x = screen_w * 0.5;
-                self.ball_pos.y = screen_h * 0.5;
-                randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
-                self.player_2_score += 1; //스코어보드에 점수 추가
-            }
-            if self.ball_pos.x > screen_w {
-                self.ball_pos.x = screen_w * 0.5;
-                self.ball_pos.y = screen_h * 0.5;
-                randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
-                self.player_1_score += 1; //스코어보드에 점수 추가
-            }
-
-            // 공이 스크린의 높이(위아래)를 벗어나는 경우
-            // ball의 속도의 y값을 반대로 돌림
-            if self.ball_pos.y < BALL_SIZE_HALF {
-                self.ball_pos.y = BALL_SIZE_HALF;
-                self.ball_vel.y = self.ball_vel.y.abs();
-            } else if self.ball_pos.y > screen_h - BALL_SIZE_HALF {
-                self.ball_pos.y = screen_h - BALL_SIZE_HALF;
-                self.ball_vel.y = -self.ball_vel.y.abs();
-            }
-            // player 타일과 ball 상호작용
-            // 플레이어 라켓과 ball이 부딪히는 경우 ball의 속도의 x를 반대로 바꿈
-            let intersects_player_1 = self.ball_pos.x - BALL_SIZE_HALF
-                < self.player_1_pos.x + RACKET_WIDTH_HALF
-                && self.ball_pos.x + BALL_SIZE_HALF > self.player_1_pos.x - RACKET_WIDTH_HALF
-                && self.ball_pos.y - BALL_SIZE_HALF < self.player_1_pos.y + RACKET_WIDTH_HALF
-                && self.ball_pos.y + BALL_SIZE_HALF > self.player_1_pos.y - RACKET_WIDTH_HALF;
-            if intersects_player_1 {
-                self.ball_vel.x = self.ball_vel.x.abs();
-            }
-            let intersects_player_2 = self.ball_pos.x - BALL_SIZE_HALF
-                < self.player_2_pos.x + RACKET_WIDTH_HALF
-                && self.ball_pos.x + BALL_SIZE_HALF > self.player_2_pos.x - RACKET_WIDTH_HALF
-                && self.ball_pos.y - BALL_SIZE_HALF < self.player_2_pos.y + RACKET_WIDTH_HALF
-                && self.ball_pos.y + BALL_SIZE_HALF > self.player_2_pos.y - RACKET_WIDTH_HALF;
-            if intersects_player_2 {
-                self.ball_vel.x = -self.ball_vel.x.abs();
-            }
 
             // 플레이어 1의 라켓 위치, 공의 좌표를 서버에 보냅니다.
             let player_position_bytes = self.player_1_pos.y.to_ne_bytes();
@@ -175,8 +137,60 @@ impl event::EventHandler for GameState {
             }
             self.player_2_pos.y = f32::from_le_bytes(buffer);
 
+            // 게임 오버
+            // 공의 위치를 중앙으로 되돌리고 속도를 랜덤하게 해서 다시 시작함.
+            if self.ball_pos.x < 0.0 {
+                self.ball_pos.x = screen_w * 0.5;
+                self.ball_pos.y = screen_h * 0.5;
+                randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
+                self.player_2_score += 1;
+            }
+            if self.ball_pos.x > screen_w {
+                self.ball_pos.x = screen_w * 0.5;
+                self.ball_pos.y = screen_h * 0.5;
+                randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
+                self.player_1_score += 1;
+            }
+
+            // 공이 스크린의 높이(위아래)를 벗어나는 경우
+            // ball의 속도의 y값을 반대로 돌림
+            if self.ball_pos.y < BALL_SIZE_HALF {
+                self.ball_pos.y = BALL_SIZE_HALF;
+                self.ball_vel.y = self.ball_vel.y.abs();
+            } else if self.ball_pos.y > screen_h - BALL_SIZE_HALF {
+                self.ball_pos.y = screen_h - BALL_SIZE_HALF;
+                self.ball_vel.y = -self.ball_vel.y.abs();
+            }
+            // player 타일과 ball 상호작용
+            // 플레이어 라켓과 ball이 부딪히는 경우 ball의 속도의 x를 반대로 바꿈
+            let intersects_player_1 = self.ball_pos.x - BALL_SIZE_HALF
+                < self.player_1_pos.x + RACKET_WIDTH_HALF
+                && self.ball_pos.x + BALL_SIZE_HALF > self.player_1_pos.x - RACKET_WIDTH_HALF
+                && self.ball_pos.y - BALL_SIZE_HALF < self.player_1_pos.y + RACKET_WIDTH_HALF
+                && self.ball_pos.y + BALL_SIZE_HALF > self.player_1_pos.y - RACKET_WIDTH_HALF;
+            if intersects_player_1 {
+                self.ball_vel.x = self.ball_vel.x.abs();
+            }
+            let intersects_player_2 = self.ball_pos.x - BALL_SIZE_HALF
+                < self.player_2_pos.x + RACKET_WIDTH_HALF
+                && self.ball_pos.x + BALL_SIZE_HALF > self.player_2_pos.x - RACKET_WIDTH_HALF
+                && self.ball_pos.y - BALL_SIZE_HALF < self.player_2_pos.y + RACKET_WIDTH_HALF
+                && self.ball_pos.y + BALL_SIZE_HALF > self.player_2_pos.y - RACKET_WIDTH_HALF;
+            if intersects_player_2 {
+                self.ball_vel.x = -self.ball_vel.x.abs();
+            }
         } else if self.state == 2 {
             // client
+
+            //서버 연결 안되었으면 연결 시도하고 종료
+            // unsafe {
+            //     let connected_to_server = socket_client.is_some();
+            //     if !connected_to_server {
+            //         connect2server();
+            //         return Ok(());
+            //     }
+            // }
+
             move_racket(&mut self.player_2_pos, KeyCode::Up, -1.0, ctx);
             move_racket(&mut self.player_2_pos, KeyCode::Down, 1.0, ctx);
 
@@ -210,6 +224,13 @@ impl event::EventHandler for GameState {
             self.ball_pos.x = f32::from_le_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]);
             self.ball_pos.y = f32::from_le_bytes([buffer[8], buffer[9], buffer[10], buffer[11]]);
 
+            // 받아온 위치를 기준으로 점수만 체크
+            if self.ball_pos.x < 0.0 {
+                self.player_2_score += 1;
+            }
+            if self.ball_pos.x > screen_w {
+                self.player_1_score += 1;
+            }
         } else {
             // solo
             move_racket(&mut self.player_2_pos, KeyCode::Up, -1.0, ctx);
@@ -228,13 +249,13 @@ impl event::EventHandler for GameState {
                 self.ball_pos.x = screen_w * 0.5;
                 self.ball_pos.y = screen_h * 0.5;
                 randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
-                self.player_2_score += 1; //스코어보드에 점수 추가
+                self.player_2_score += 1;
             }
             if self.ball_pos.x > screen_w {
                 self.ball_pos.x = screen_w * 0.5;
                 self.ball_pos.y = screen_h * 0.5;
                 randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
-                self.player_1_score += 1; //스코어보드에 점수 추가
+                self.player_1_score += 1;
             }
 
             // 공이 스크린의 높이(위아래)를 벗어나는 경우
@@ -266,6 +287,7 @@ impl event::EventHandler for GameState {
                 self.ball_vel.x = -self.ball_vel.x.abs();
             }
         }
+
         //승리 조건 달성 시 END 화면으로
         unsafe {
             if self.player_1_score > 4 {
@@ -277,8 +299,7 @@ impl event::EventHandler for GameState {
                     socket_client = None;
                 }
                 self.state_transition = StateTransition::P1Win;
-            }
-            else if self.player_2_score > 4 {
+            } else if self.player_2_score > 4 {
                 if let Some(server_socket) = &mut socket_client {
                     // 소켓을 닫습니다.
                     std::mem::drop(server_socket);

@@ -4,18 +4,34 @@ use ggez::input::keyboard::{self, KeyCode}; // 키보드 모듈
 use ggez::nalgebra as na; // 벡터, 행렬 등의 수학 연산 모듈
 use ggez::{Context, GameResult};
 
+use crate::constants::StateTransition;
+
 //점수에 따라 승자를 표시
 
 pub struct EndState {
+    pub state_transition: StateTransition,
     win_player: i32, //승자 번호
 }
 
 impl EndState {
     pub fn new(ctx: &mut Context, win_player: i32) -> Self {
-        EndState { win_player }
+        EndState {
+            state_transition: StateTransition::None,
+            win_player,
+        }
     }
 }
 impl event::EventHandler for EndState {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: event::MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        self.state_transition = StateTransition::ToTitle;
+    }
+
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         Ok(())
     }
