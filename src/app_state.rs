@@ -1,16 +1,16 @@
 use ggez; // rust의 게임 라이브러리
 use ggez::event; // 이벤트 모듈
-use ggez::input::keyboard::{self, KeyCode}; // 키보드 모듈
 use ggez::event::KeyMods;
-use ggez::{Context, GameResult};
-use ggez::graphics::pipe::new; // 게임 모듈(실행환경 저장 및 결과 반환)
+use ggez::graphics::pipe::new;
+use ggez::input::keyboard::{self, KeyCode}; // 키보드 모듈
+use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과 반환)
 
 use crate::constants::StateTransition;
 use crate::end_state::EndState;
-use crate::title_state::TitleState;
 use crate::game_state::GameState;
-use crate::stay_state::StayState;
 use crate::input_state::InputState;
+use crate::stay_state::StayState;
+use crate::title_state::TitleState;
 use crate::wait_state::WaitState;
 
 //use crate::title2_state::Title2State;
@@ -43,13 +43,13 @@ impl AppState {
             }
             StateTransition::Solo => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 0));
-            }
+            },
             StateTransition::Host => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 1));
-            }
+            },
             StateTransition::Client => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 2));
-            }
+            },
             StateTransition::Stay_Room => {
                 self.current_state = CurrentState::Stay(StayState::new(ctx));
             }
@@ -113,25 +113,19 @@ impl event::EventHandler for AppState {
                 end_state.mouse_button_down_event(ctx, button, x, y);
                 // wait_state를 사용하여 마우스 클릭 로직을 수행합니다.
             }
-
         };
     }
     //port 번호 입력 받는 로직 설정
     fn text_input_event(&mut self, _ctx: &mut Context, _character: char) {
         match &mut self.current_state {
-            CurrentState::Title(title_state) => {
-            }
-            CurrentState::Game(game_state) => {
-            }
-            CurrentState::Stay(stay_state) => {
-            }
+            CurrentState::Title(title_state) => {}
+            CurrentState::Game(game_state) => {}
+            CurrentState::Stay(stay_state) => {}
             CurrentState::Input(input_state) => {
                 input_state.text_input_event(_ctx, _character);
             }
-            CurrentState::Wait(wait_state) => {
-            }
-            CurrentState::Win(end_state) => {
-            }
+            CurrentState::Wait(wait_state) => {}
+            CurrentState::Win(end_state) => {}
         };
     }
 
@@ -171,7 +165,7 @@ impl event::EventHandler for AppState {
             CurrentState::Input(input_state) => input_state.state_transition,
             CurrentState::Wait(wait_state) => wait_state.state_transition,
             CurrentState::Game(game_state) => game_state.state_transition,
-            CurrentState::Win(end_state) => StateTransition::None,
+            CurrentState::Win(end_state) => end_state.state_transition,
         };
 
         //스테이트 변경 요청에 따라 스테이트를 변경
