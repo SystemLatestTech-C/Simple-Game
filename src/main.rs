@@ -20,13 +20,11 @@ mod app_state;
 mod constants; // 상수를 관리하는 모듈입니다.
 mod end_state;
 mod game_state;
-mod server; // 서버를 관리하는 모듈입니다.
 mod state_func; // move_racket, randomize_vec 함수를 관리하는 모듈입니다.
 mod title_state;
 
 use app_state::AppState;
 use constants::*;
-use server::listen_for_clients;
 use state_func::*;
 use title_state::TitleState;
 
@@ -45,26 +43,6 @@ fn main() -> GameResult {
         .window_mode(ggez::conf::WindowMode::default().dimensions(800.0, 600.0));
     let (ctx, event_loop) = &mut cb.build()?;
     graphics::set_window_title(ctx, "Ping-Pong"); // 창 제목을 설정합니다.
-
-    let args: Vec<String> = env::args().collect();
-    // match args[1].as_str() {
-    //     "host" => {
-    //         println!("호스트 접속");
-    //         let server_thread = thread::spawn(|| {
-    //             listen_for_clients();
-    //         });
-    //         let mut state = AppState::new(ctx); //임시로 변경
-    //         event::run(ctx, event_loop, &mut state).unwrap();
-    //     }
-    //     "player" => {
-    //         println!("플레이어2 접속");
-    //         let mut state = AppState::new(ctx); //임시로 변경
-    //         event::run(ctx, event_loop, &mut state).unwrap();
-    //     }
-    //     _ => {
-    //         println!("Usage: cargo run -- [server|player1|player2]");
-    //     }
-    // }
     let mut state = AppState::new(ctx); //임시로 변경
     event::run(ctx, event_loop, &mut state).unwrap();
 

@@ -31,10 +31,10 @@ impl AppState {
     //각 State의 Stage Transition을 인자로 받아서, 현재 페이지(State)를 인자로 받은 스테이트로 변경하는 함수
     pub fn change_state(&mut self, ctx: &mut Context, state_transition: StateTransition) {
         match state_transition {
-            StateTransition::Solo => {
+            StateTransition::Solo => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 0));
             }
-            StateTransition::Multi => {
+            StateTransition::Multi => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 1));
             }
             StateTransition::P1Win => {

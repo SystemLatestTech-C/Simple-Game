@@ -12,8 +12,20 @@ use std::net::TcpStream;
 use std::thread;
 
 use crate::constants::*; // constants.rs 파일을 가져옵니다.
-use crate::server::listen_for_clients;
 use crate::state_func::*; // state_func.rs 파일을 가져옵니다.
+
+static mut socket_client:Option<TcpStream> = None;
+
+unsafe fn connect2server() {
+    socket_client = (TcpStream::connect(SERVER_ADDR)
+        .map_err(|e| {
+            io::Error::new(
+                ErrorKind::Other,
+                format!("Failed to connect to server: {}", e),
+            )
+        })
+        .ok());
+}
 
 pub struct GameState {
     pub state_transition: StateTransition, //스테이트를 변경하고자 할 때 변경될 ENUM 값
@@ -29,30 +41,17 @@ pub struct GameState {
     player_2_score: i32, //스코어 텍스트 2
     state: i32,
     //server_socket: TcpStream,
-    server_socket: Option<TcpStream>,
     start_timer: f64,
     //현재 화면이 보여지기 전에 (싱글플레이 버튼을 누르면 화면 표시에 다소 시간이 소요) 미리 게임이 동작해서 시작부터 스코어가 1:0 인 오류가 발생함
     //임시로 3초가 지나야 게임의 update가 동작하도록 타이머 설정.
 }
 impl GameState {
     //MainState 구조체의 인스턴스를 생성하는 함수
-    pub fn new(ctx: &mut Context, state: i32) -> Self {
-        if state == 1 {
-            println!("호스트 접속");
-            let server_thread = thread::spawn(|| {
-                listen_for_clients();
-            });
+    pub unsafe fn new(ctx: &mut Context, state: i32) -> Self {
+
+        if state == 1 || state == 2 {
+            connect2server();
         }
-
-        let server_socket = (TcpStream::connect(SERVER_ADDR)
-            .map_err(|e| {
-                io::Error::new(
-                    ErrorKind::Other,
-                    format!("Failed to connect to server: {}", e),
-                )
-            })
-            .ok());
-
         let (screen_w, screen_h) = graphics::drawable_size(ctx); // 현재 게임 윈도우의 너비와 높이 정보를 screen_w, screen_h에 저장
         let (screen_w_half, screen_h_half) = (screen_w * 0.5, screen_h * 0.5); // screen half값 저장
         let mut ball_vel = na::Vector2::new(0.0, 0.0); // ball_vel의 초기화
@@ -66,8 +65,7 @@ impl GameState {
             player_1_score: 0,
             player_2_score: 0,
             state,
-            server_socket,
-            start_timer: 3.0,
+            start_timer: 1.0,
         }
     }
 }
@@ -75,17 +73,19 @@ impl event::EventHandler for GameState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         let dt = ggez::timer::delta(ctx).as_secs_f32(); // 프레임에 상관없이 경과한 시간을 초로 포현
         let (screen_w, screen_h) = graphics::drawable_size(ctx); //스크린 사이즈를 저장하는 변수
+        println!("{:?}", self.state);
 
-        if self.start_timer > 0.0 {
-            //3초가 지난 후에 업데이트 로직 실행
-            self.start_timer -= timer::delta(ctx).as_secs_f64();
-            return Ok(());
-        }
+        // if self.start_timer > 0.0 {
+        //     //3초가 지난 후에 업데이트 로직 실행
+        //     self.start_timer -= timer::delta(ctx).as_secs_f64();
+        //     return Ok(());
+        // }
 
         // 키 입력에 따라 라켓을 움직이도록 함.
         // W, S는 player_1, Up, Down은 player_2
         if self.state == 1 {
             // host
+            println!("{}", self.state);
             move_racket(&mut self.player_1_pos, KeyCode::Up, -1.0, ctx);
             move_racket(&mut self.player_1_pos, KeyCode::Down, 1.0, ctx);
 
@@ -143,26 +143,32 @@ impl event::EventHandler for GameState {
             ]
             .concat();
 
-            if let Some(server_socket) = &mut self.server_socket {
-                server_socket
-                    .write_all(&player_position_ball_pos_data)
-                    .map_err(|e| {
-                        io::Error::new(
-                            ErrorKind::Other,
-                            format!("Failed to send player position to server: {}", e),
-                        )
-                    })?;
+            unsafe {
+                if let Some(server_socket) = &mut socket_client {
+                    println!("{:?}", player_position_ball_pos_data);
+                    server_socket
+                        .write_all(&player_position_ball_pos_data)
+                        .map_err(|e| {
+                            io::Error::new(
+                                ErrorKind::Other,
+                                format!("Failed to send player position to server: {}", e),
+                            )
+                        })?;
+                }
             }
 
             // 플레이어 2의 라켓 위치를 서버에서 받습니다.
             let mut buffer = [0u8; 4];
-            if let Some(server_socket) = &mut self.server_socket {
-                server_socket.read_exact(&mut buffer).map_err(|e| {
-                    io::Error::new(
-                        ErrorKind::Other,
-                        format!("Failed to receive data from server: {}", e),
-                    )
-                })?;
+            unsafe {
+                if let Some(server_socket) = &mut socket_client {
+                    server_socket.read_exact(&mut buffer).map_err(|e| {
+                        io::Error::new(
+                            ErrorKind::Other,
+                            format!("Failed to receive data from server: {}", e),
+                        )
+                    })?;
+                    println!("{:?}", buffer);
+                }
             }
             self.player_2_pos.y = f32::from_le_bytes(buffer);
         } else if self.state == 2 {
@@ -172,24 +178,28 @@ impl event::EventHandler for GameState {
 
             // 플레이어 2의 라켓 위치를 서버에 전송합니다.
             let player_2_position = self.player_2_pos.y.to_le_bytes();
-            if let Some(server_socket) = &mut self.server_socket {
-                server_socket.write_all(&player_2_position).map_err(|e| {
-                    io::Error::new(
-                        ErrorKind::Other,
-                        format!("Failed to send data to server: {}", e),
-                    )
-                })?;
+            unsafe {
+                if let Some(server_socket) = &mut socket_client {
+                    server_socket.write_all(&player_2_position).map_err(|e| {
+                        io::Error::new(
+                            ErrorKind::Other,
+                            format!("Failed to send data to server: {}", e),
+                        )
+                    })?;
+                }
             }
 
             // 플레이어 1의 라켓 위치, 공의 위치를 서버에서 받습니다.
             let mut buffer = [0u8; 12];
-            if let Some(server_socket) = &mut self.server_socket {
-                server_socket.read_exact(&mut buffer).map_err(|e| {
-                    io::Error::new(
-                        ErrorKind::Other,
-                        format!("Failed to receive data from server: {}", e),
-                    )
-                })?;
+            unsafe {
+                if let Some(server_socket) = &mut socket_client {
+                    server_socket.read_exact(&mut buffer).map_err(|e| {
+                        io::Error::new(
+                            ErrorKind::Other,
+                            format!("Failed to receive data from server: {}", e),
+                        )
+                    })?;
+                }
             }
 
             self.player_1_pos.y = f32::from_le_bytes([buffer[0], buffer[1], buffer[2], buffer[3]]);

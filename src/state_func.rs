@@ -19,6 +19,7 @@ pub fn move_racket(pos: &mut na::Point2<f32>, keycode: KeyCode, y_dir: f32, ctx:
     if keyboard::is_key_pressed(ctx, keycode) {
         // 해당 키가 눌렸는지 확인합니다.
         pos.y += y_dir * PLAYER_SPEED * dt; // 라켓의 y 좌표를 업데이트합니다.
+        println!("moved!");
     }
     pos.y = pos.y.clamp(RACKET_HIGHT_HALF, screen_h - RACKET_HIGHT_HALF); // 라켓이 화면 밖으로 나가지 않도록 위치를 조정합니다.
 }
