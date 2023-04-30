@@ -19,7 +19,10 @@ pub const SERVER_ADDR: &str = "127.0.0.1:8080"; // 서버의 주소
 pub enum StateTransition {
     None,
     ToTitle,
-    ToMain,
-    Multi,
     Solo,
+    Stay_Room,
+    Host,
+    Client,
+    Input,
+    ToWait,
 }

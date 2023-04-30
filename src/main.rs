@@ -22,12 +22,19 @@ mod server; // 서버를 관리하는 모듈입니다.
 mod state_func; // move_racket, randomize_vec 함수를 관리하는 모듈입니다.
 mod title_state;
 mod game_state;
+mod stay_state;
+mod input_state;
+mod wait_state;
 
 use app_state::AppState;
 use constants::*;
 use server::listen_for_clients;
 use state_func::*;
 use title_state::TitleState;
+use stay_state::StayState;
+use input_state::InputState;
+use wait_state::WaitState;
+
 
 /**
  *   main 함수입니다.

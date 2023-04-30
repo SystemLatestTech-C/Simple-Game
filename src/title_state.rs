@@ -102,7 +102,7 @@ impl event::EventHandler for TitleState {
             self.state_transition = StateTransition::Solo; //현 시점에서는 싱글 플레이 버튼을 누를 시, 호스트 스테이트로 전환하도록 임시로 설정
         }
         if multi_button_rect.contains(point) {
-            self.state_transition = StateTransition::Multi; //현 시점에서는 멀티 플레이 버튼을 누를 시, 플레이어 스테이트로 전환하도록 임시로 설정
+            self.state_transition = StateTransition::Stay_Room; //현 시점에서는 멀티 플레이 버튼을 누를 시, 플레이어 스테이트로 전환하도록 임시로 설정
         }
     }
 
