@@ -102,7 +102,7 @@ impl event::EventHandler for TitleState {
             self.state_transition = StateTransition::Solo;
         }
         if multi_button_rect.contains(point) {
-            self.state_transition = StateTransition::Multi;
+            self.state_transition = StateTransition::Stay_Room;
         }
     }
 

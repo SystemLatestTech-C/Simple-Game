@@ -1,12 +1,20 @@
 use ggez; // rust의 게임 라이브러리
 use ggez::event; // 이벤트 모듈
 use ggez::input::keyboard::{self, KeyCode}; // 키보드 모듈
-use ggez::{Context, GameResult}; // 게임 모듈(실행환경 저장 및 결과 반환)
+use ggez::event::KeyMods;
+use ggez::{Context, GameResult};
+use ggez::graphics::pipe::new; // 게임 모듈(실행환경 저장 및 결과 반환)
 
 use crate::constants::StateTransition;
 use crate::end_state::EndState;
 use crate::game_state::GameState;
-use crate::title_state::TitleState;
+
+use crate::stay_state::StayState;
+use crate::input_state::InputState;
+use crate::wait_state::WaitState;
+
+//use crate::title2_state::Title2State;
+
 
 // AppState는 게임의 현재 State를 인자로 가지는 ENUM을 갖고, ENUM의 값에 해당하는 스테이트의 이벤트핸들러 함수를 수행합니다.
 // 즉 동작에 따라 씬을 전환하는 역할을 수행하는, event::run에서 사용될 최상위 스테이트입니다.
@@ -31,17 +39,27 @@ impl AppState {
     //각 State의 Stage Transition을 인자로 받아서, 현재 페이지(State)를 인자로 받은 스테이트로 변경하는 함수
     pub fn change_state(&mut self, ctx: &mut Context, state_transition: StateTransition) {
         match state_transition {
+            StateTransition::ToTitle => {
+                self.current_state = CurrentState::Title(TitleState::new(ctx));
+            }
             StateTransition::Solo => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 0));
             }
-            StateTransition::Multi => unsafe {
+            StateTransition::Host => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 1));
             }
-            StateTransition::P1Win => {
-                self.current_state = CurrentState::End(EndState::new(ctx, 1));
+            StateTransition::Client => unsafe {
+                self.current_state = CurrentState::Game(GameState::new(ctx, 2));
             }
-            StateTransition::P2Win => {
-                self.current_state = CurrentState::End(EndState::new(ctx, 2));
+            StateTransition::Stay_Room => {
+                self.current_state = CurrentState::Stay(StayState::new(ctx));
+            }
+            StateTransition::Input => {
+                self.current_state = CurrentState::Input(InputState::new(ctx));
+            }
+            StateTransition::ToWait => {
+                self.current_state = CurrentState::Wait(WaitState::new(ctx));
+
             }
             _ => {}
         }
@@ -52,7 +70,10 @@ impl AppState {
 pub enum CurrentState {
     Title(TitleState),
     Game(GameState),
-    End(EndState),
+    Stay(StayState),
+    Input(InputState),
+    Wait(WaitState),
+
 }
 
 impl event::EventHandler for AppState {
@@ -72,8 +93,34 @@ impl event::EventHandler for AppState {
             CurrentState::Game(game_state) => {
                 // game_state를 사용하여 마우스 클릭 로직을 수행합니다.
             }
-            CurrentState::End(end_state) => {
-                // end_state를 사용하여 마우스 클릭 로직을 수행합니다.
+            CurrentState::Stay(stay_state) => {
+                stay_state.mouse_button_down_event(ctx, button, x, y);
+                // stay_state를 사용하여 마우스 클릭 로직을 수행합니다.
+            }
+            CurrentState::Input(input_state) => {
+                input_state.mouse_button_down_event(ctx, button, x, y);
+                // input_state를 사용하여 마우스 클릭 로직을 수행합니다.
+            }
+            CurrentState::Wait(wait_state) => {
+                wait_state.mouse_button_down_event(ctx, button, x, y);
+                // wait_state를 사용하여 마우스 클릭 로직을 수행합니다.
+            }
+
+        };
+    }
+    //port 번호 입력 받는 로직 설정
+    fn text_input_event(&mut self, _ctx: &mut Context, _character: char) {
+        match &mut self.current_state {
+            CurrentState::Title(title_state) => {
+            }
+            CurrentState::Game(game_state) => {
+            }
+            CurrentState::Stay(stay_state) => {
+            }
+            CurrentState::Input(input_state) => {
+                input_state.text_input_event(_ctx, _character);
+            }
+            CurrentState::Wait(wait_state) => {
             }
         };
     }
@@ -88,16 +135,28 @@ impl event::EventHandler for AppState {
                 // game_state를 사용하여 업데이트 로직을 수행합니다.
                 game_state.update(ctx).unwrap();
             }
-            CurrentState::End(end_state) => {
-                // end_state를 사용하여 업데이트 로직을 수행합니다.
+            CurrentState::Stay(stay_state) => {
+                // stay_state를 사용하여 업데이트 로직을 수행합니다.
+                stay_state.update(ctx).unwrap();
+            }
+            CurrentState::Input(input_state) => {
+                // Input_state를 사용하여 업데이트 로직을 수행합니다.
+                input_state.update(ctx).unwrap();
+            }
+            CurrentState::Wait(wait_state) => {
+                // Wait_state를 사용하여 업데이트 로직을 수행합니다.
+                wait_state.update(ctx).unwrap();
             }
         }
 
         //현재 스테이트의, 스테이트 변경 요청을 체크 후 가져오기
         let state_transition = match &mut self.current_state {
             CurrentState::Title(title_state) => title_state.state_transition,
-            CurrentState::Game(game_state) => game_state.state_transition,
-            CurrentState::End(end_state) => StateTransition::None,
+
+            CurrentState::Stay(stay_state) => stay_state.state_transition,
+            CurrentState::Input(input_state) => input_state.state_transition,
+            CurrentState::Wait(wait_state) => wait_state.state_transition,
+            CurrentState::Game(game_state) => StateTransition::None,
         };
 
         //스테이트 변경 요청에 따라 스테이트를 변경
@@ -117,9 +176,18 @@ impl event::EventHandler for AppState {
                 // game_state를 사용하여 렌더링 로직을 수행합니다.
                 game_state.draw(ctx).unwrap();
             }
-            CurrentState::End(end_state) => {
-                // end_state를 사용하여 업데이트 로직을 수행합니다.
-                end_state.draw(ctx).unwrap();
+            CurrentState::Stay(stay_state) => {
+                // stay_state를 사용하여 렌더링 로직을 수행합니다.
+                stay_state.draw(ctx).unwrap();
+            }
+            CurrentState::Input(input_state) => {
+                // input_state를 사용하여 렌더링 로직을 수행합니다.
+                input_state.draw(ctx).unwrap();
+            }
+            CurrentState::Wait(wait_state) => {
+                // wait_state를 사용하여 렌더링 로직을 수행합니다.
+                wait_state.draw(ctx).unwrap();
+
             }
         }
         Ok(())
