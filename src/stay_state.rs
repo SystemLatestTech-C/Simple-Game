@@ -97,7 +97,7 @@ impl event::EventHandler for StayState {
 
         //설정한 사각형 좌표에 마우스 클릭 좌표가 겹치면 게임 페이지 전환.
         if make_room_button_rect.contains(point) {
-            self.state_transition = StateTransition::ToWait; //client가 들어올 때 까지 기다리는 state로 전환
+            self.state_transition = StateTransition::Host; //client가 들어올 때 까지 기다리는 state로 전환
         }
         if multi_button_rect.contains(point) {
             self.state_transition = StateTransition::Input; //port 번호를 입력 받는 state로 전환

@@ -40,13 +40,13 @@ impl AppState {
             StateTransition::ToTitle => {
                 self.current_state = CurrentState::Title(TitleState::new(ctx));
             }
-            StateTransition::Solo => {
+            StateTransition::Solo => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 0));
             }
-            StateTransition::Host => {
+            StateTransition::Host => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 1));
             }
-            StateTransition::Client => {
+            StateTransition::Client => unsafe {
                 self.current_state = CurrentState::Game(GameState::new(ctx, 2));
             }
             StateTransition::Stay_Room => {

@@ -99,10 +99,10 @@ impl event::EventHandler for TitleState {
 
         //설정한 사각형 좌표에 마우스 클릭 좌표가 겹치면 게임 페이지 전환.
         if single_button_rect.contains(point) {
-            self.state_transition = StateTransition::Solo; //현 시점에서는 싱글 플레이 버튼을 누를 시, 호스트 스테이트로 전환하도록 임시로 설정
+            self.state_transition = StateTransition::Solo;
         }
         if multi_button_rect.contains(point) {
-            self.state_transition = StateTransition::Stay_Room; //현 시점에서는 멀티 플레이 버튼을 누를 시, 플레이어 스테이트로 전환하도록 임시로 설정
+            self.state_transition = StateTransition::Stay_Room;
         }
     }
 
