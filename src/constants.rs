@@ -11,7 +11,7 @@ pub const BALL_SIZE: f32 = 30.0; // 공의 크기
 pub const BALL_SIZE_HALF: f32 = BALL_SIZE * 0.5; // 공의 크기의 절반
 pub const PLAYER_SPEED: f32 = 600.0; // 플레이어의 속도
 pub const BALL_SPEED: f32 = 300.0; // 공의 속도
-pub const SERVER_ADDR: &str = "138.2.119.231:8080"; // 서버의 주소
+pub const SERVER_ADDR: &str = "127.0.0.1:8080"; // 서버의 주소
 
 //스테이트를 변경하고자 할 때 반환하는 ENUM 값
 

@@ -9,6 +9,7 @@ use std::io;
 use std::io::ErrorKind;
 use std::io::{Read, Write};
 use std::net::TcpStream;
+use std::net::Shutdown;
 use std::thread;
 
 use crate::constants::*; // constants.rs 파일을 가져옵니다.
@@ -97,11 +98,13 @@ impl event::EventHandler for GameState {
                 self.ball_pos.x = screen_w * 0.5;
                 self.ball_pos.y = screen_h * 0.5;
                 randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
+                self.player_2_score += 1; //스코어보드에 점수 추가
             }
             if self.ball_pos.x > screen_w {
                 self.ball_pos.x = screen_w * 0.5;
                 self.ball_pos.y = screen_h * 0.5;
                 randomize_vec(&mut self.ball_vel, BALL_SPEED, BALL_SPEED);
+                self.player_1_score += 1; //스코어보드에 점수 추가
             }
 
             // 공이 스크린의 높이(위아래)를 벗어나는 경우
@@ -171,6 +174,7 @@ impl event::EventHandler for GameState {
                 }
             }
             self.player_2_pos.y = f32::from_le_bytes(buffer);
+
         } else if self.state == 2 {
             // client
             move_racket(&mut self.player_2_pos, KeyCode::Up, -1.0, ctx);
@@ -205,6 +209,7 @@ impl event::EventHandler for GameState {
             self.player_1_pos.y = f32::from_le_bytes([buffer[0], buffer[1], buffer[2], buffer[3]]);
             self.ball_pos.x = f32::from_le_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]);
             self.ball_pos.y = f32::from_le_bytes([buffer[8], buffer[9], buffer[10], buffer[11]]);
+
         } else {
             // solo
             move_racket(&mut self.player_2_pos, KeyCode::Up, -1.0, ctx);
@@ -242,13 +247,6 @@ impl event::EventHandler for GameState {
                 self.ball_vel.y = -self.ball_vel.y.abs();
             }
 
-            //승리 조건 달성 시 END 화면으로
-            if self.player_1_score > 4 {
-                self.state_transition = StateTransition::P1Win;
-            } else if self.player_2_score > 4 {
-                self.state_transition = StateTransition::P2Win;
-            }
-
             // player 타일과 ball 상호작용
             // 플레이어 라켓과 ball이 부딪히는 경우 ball의 속도의 x를 반대로 바꿈
             let intersects_player_1 = self.ball_pos.x - BALL_SIZE_HALF
@@ -266,6 +264,29 @@ impl event::EventHandler for GameState {
                 && self.ball_pos.y + BALL_SIZE_HALF > self.player_2_pos.y - RACKET_WIDTH_HALF;
             if intersects_player_2 {
                 self.ball_vel.x = -self.ball_vel.x.abs();
+            }
+        }
+        //승리 조건 달성 시 END 화면으로
+        unsafe {
+            if self.player_1_score > 4 {
+                if let Some(server_socket) = &mut socket_client {
+                    // 소켓을 닫습니다.
+                    std::mem::drop(server_socket);
+
+                    // socket_client를 None으로 설정하여 이후 사용을 막습니다.
+                    socket_client = None;
+                }
+                self.state_transition = StateTransition::P1Win;
+            }
+            else if self.player_2_score > 4 {
+                if let Some(server_socket) = &mut socket_client {
+                    // 소켓을 닫습니다.
+                    std::mem::drop(server_socket);
+
+                    // socket_client를 None으로 설정하여 이후 사용을 막습니다.
+                    socket_client = None;
+                }
+                self.state_transition = StateTransition::P2Win;
             }
         }
 
