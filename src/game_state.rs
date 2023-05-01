@@ -38,8 +38,8 @@ pub struct GameState {
     ball_pos: na::Point2<f32>,
     ball_vel: na::Vector2<f32>,
     //ball의 방향을 나타내야 하기 때문에 2차원 벡터를 나타내는 Vector2타입으로 설정합니다.
-    player_1_score: i32, //스코어 텍스트
-    player_2_score: i32, //스코어 텍스트 2
+    player_1_score: u8, //스코어 텍스트
+    player_2_score: u8, //스코어 텍스트 2
     state: i32,
     //server_socket: TcpStream,
     start_timer: f64,
@@ -292,6 +292,8 @@ impl event::EventHandler for GameState {
         unsafe {
             if self.player_1_score > 4 {
                 if let Some(server_socket) = &mut socket_client {
+                    let tmp = [self.player_1_score, self.player_2_score, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    server_socket.write_all(&tmp)?;
                     // 소켓을 닫습니다.
                     std::mem::drop(server_socket);
 
@@ -301,6 +303,8 @@ impl event::EventHandler for GameState {
                 self.state_transition = StateTransition::P1Win;
             } else if self.player_2_score > 4 {
                 if let Some(server_socket) = &mut socket_client {
+                    let tmp = [self.player_1_score, self.player_2_score, 0, 0];
+                    server_socket.write_all(&tmp)?;
                     // 소켓을 닫습니다.
                     std::mem::drop(server_socket);
 
